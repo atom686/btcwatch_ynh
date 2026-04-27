@@ -2,7 +2,6 @@
 # btcwatch change_url — updates the nginx site when domain or path changes.
 # No stop/start needed: PHP-FPM and the cron job don't depend on the URL.
 
-source _common.sh
 source /usr/share/yunohost/helpers
 
 ynh_script_progression --message="Rewriting nginx config..."

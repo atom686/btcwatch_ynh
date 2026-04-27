@@ -1,7 +1,6 @@
 #!/bin/bash
 # btcwatch remove script.
 
-source _common.sh
 source /usr/share/yunohost/helpers
 
 ynh_script_progression --message="Removing cron job..."

@@ -1,26 +1,22 @@
 #!/bin/bash
-# btcwatch backup script.
+# btcwatch backup script — packaging v2.
 # Captures install dir, data dir, PHP-FPM pool, nginx site, cron, logrotate.
+# Note: in v2 ynh_backup takes a positional path; $data_dir is auto-skipped
+# during safety-backup-before-upgrade unless explicitly opted in.
 
-source _common.sh
 source /usr/share/yunohost/helpers
 
 ynh_print_info --message="Backing up btcwatch..."
 
-#--- Source code + config.php ---
-ynh_backup --src_path="$install_dir"
+# Source code + config.php
+ynh_backup "$install_dir"
 
-#--- Watched addresses + saved settings (Telegram creds!) ---
-ynh_backup --src_path="$data_dir" --is_big
+# Watched addresses + saved settings (Telegram creds!).
+# v2 auto-skips this during safety-backup-before-upgrade — that's intentional.
+ynh_backup "$data_dir"
 
-#--- PHP-FPM pool ---
-ynh_backup --src_path="/etc/php/${YNH_PHP_VERSION:-8.2}/fpm/pool.d/$app.conf"
-
-#--- Nginx site ---
-ynh_backup --src_path="/etc/nginx/conf.d/$domain.d/$app.conf"
-
-#--- Cron ---
-ynh_backup --src_path="/etc/cron.d/$app"
-
-#--- Logrotate ---
-ynh_backup --src_path="/etc/logrotate.d/$app"
+# PHP-FPM pool, nginx site, cron, logrotate
+ynh_backup "/etc/php/${YNH_PHP_VERSION:-8.3}/fpm/pool.d/$app.conf"
+ynh_backup "/etc/nginx/conf.d/$domain.d/$app.conf"
+ynh_backup "/etc/cron.d/$app"
+ynh_backup "/etc/logrotate.d/$app"
