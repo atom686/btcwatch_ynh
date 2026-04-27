@@ -1,14 +1,13 @@
 #!/bin/bash
-# btcwatch install script — YunoHost packaging v2.
+# btcwatch install script — YunoHost packaging v2 (PHP edition).
 
 source _common.sh
 source /usr/share/yunohost/helpers
 
-# Manifest install questions and resource provisioning expose:
+# Manifest install-question variables exposed by YunoHost:
 #   $domain $path $app
 #   $install_dir $data_dir
-#   $port
-#   $telegram_bot_token $telegram_chat_id $poll_interval_seconds
+#   $telegram_bot_token $telegram_chat_id
 
 #=================================================
 # DEPLOY APPLICATION SOURCE
@@ -17,48 +16,42 @@ ynh_script_progression --message="Deploying btcwatch source..."
 
 btcwatch_sync_source "$install_dir"
 
-mkdir -p "$data_dir"
-# Pre-create empty addresses.json so first request doesn't race the monitor.
-if [ ! -f "$data_dir/addresses.json" ]; then
-    echo "[]" > "$data_dir/addresses.json"
-fi
+mkdir -p "$data_dir" "/var/log/$app"
+[ -f "$data_dir/addresses.json" ] || echo "[]" > "$data_dir/addresses.json"
 
-chown -R "$app:$app" "$install_dir" "$data_dir"
-chmod 750 "$data_dir"
+chown -R "$app:$app" "$install_dir" "$data_dir" "/var/log/$app"
+chmod 750 "$data_dir" "/var/log/$app"
 chmod 640 "$data_dir/addresses.json"
 
 #=================================================
-# WRITE .env
+# WRITE config.php (paths only — secrets live in settings.json)
 #=================================================
-ynh_script_progression --message="Writing environment file..."
-
-ynh_config_add --template="btcwatch.env" --destination="$install_dir/.env"
-chown "$app:$app" "$install_dir/.env"
-chmod 600 "$install_dir/.env"
-
-#=================================================
-# INSTALL RUBY DEPENDENCIES
-#=================================================
-ynh_script_progression --message="Running bundle install (this may take a minute)..."
-
-btcwatch_bundle_install "$app" "$install_dir"
+ynh_script_progression --message="Writing config.php..."
+ynh_config_add --template="config.php" --destination="$install_dir/config.php"
+chown "$app:$app" "$install_dir/config.php"
+chmod 640 "$install_dir/config.php"
 
 #=================================================
-# SYSTEMD + NGINX
+# SEED settings.json with install-time Telegram credentials (if any)
 #=================================================
-ynh_script_progression --message="Adding systemd unit..."
-ynh_config_add_systemd
+ynh_script_progression --message="Seeding runtime settings..."
+btcwatch_seed_settings "$data_dir" "$app" "$telegram_bot_token" "$telegram_chat_id"
+
+#=================================================
+# PHP-FPM POOL + NGINX + CRON + LOGROTATE
+#=================================================
+ynh_script_progression --message="Adding PHP-FPM pool..."
+ynh_config_add_phpfpm
 
 ynh_script_progression --message="Adding nginx site..."
 ynh_config_add_nginx
 
-yunohost service add "$app" \
-    --description="Bitcoin Address Watch — mempool.space monitor + Telegram notifier"
+ynh_script_progression --message="Adding cron poller (runs every 5 minutes)..."
+ynh_config_add --template="cron" --destination="/etc/cron.d/$app"
+chown root:root "/etc/cron.d/$app"
+chmod 644 "/etc/cron.d/$app"
 
-#=================================================
-# START SERVICE
-#=================================================
-ynh_script_progression --message="Starting btcwatch..."
-ynh_systemctl --service="$app" --action="start"
+ynh_script_progression --message="Adding logrotate config..."
+ynh_config_add_logrotate "/var/log/$app"
 
 ynh_script_progression --message="Installation completed"

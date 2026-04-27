@@ -4,9 +4,6 @@
 source _common.sh
 source /usr/share/yunohost/helpers
 
-ynh_script_progression --message="Stopping btcwatch..."
-ynh_systemctl --service="$app" --action="stop" || true
-
 #=================================================
 # REPLACE SOURCE
 #=================================================
@@ -15,38 +12,41 @@ ynh_script_progression --message="Refreshing source code..."
 btcwatch_sync_source "$install_dir"
 chown -R "$app:$app" "$install_dir"
 
-# Make sure the data file still exists (won't be touched by source rsync).
-if [ ! -f "$data_dir/addresses.json" ]; then
+mkdir -p "$data_dir" "/var/log/$app"
+chown -R "$app:$app" "$data_dir" "/var/log/$app"
+[ -f "$data_dir/addresses.json" ] || {
     echo "[]" > "$data_dir/addresses.json"
     chown "$app:$app" "$data_dir/addresses.json"
     chmod 640 "$data_dir/addresses.json"
-fi
+}
 
 #=================================================
-# REWRITE .env (keeps secrets in sync with new template variables)
+# REWRITE config.php (paths only)
 #=================================================
-ynh_script_progression --message="Updating environment file..."
-ynh_config_add --template="btcwatch.env" --destination="$install_dir/.env"
-chown "$app:$app" "$install_dir/.env"
-chmod 600 "$install_dir/.env"
+ynh_script_progression --message="Updating config.php..."
+ynh_config_add --template="config.php" --destination="$install_dir/config.php"
+chown "$app:$app" "$install_dir/config.php"
+chmod 640 "$install_dir/config.php"
+
+# settings.json is preserved as-is; we never overwrite values the user has
+# saved via the web UI. The seed helper only fills empty fields.
+btcwatch_seed_settings "$data_dir" "$app" "$telegram_bot_token" "$telegram_chat_id"
 
 #=================================================
-# RE-RUN BUNDLE INSTALL
+# REFRESH PHP-FPM, NGINX, CRON, LOGROTATE
 #=================================================
-ynh_script_progression --message="Updating Ruby dependencies..."
-btcwatch_bundle_install "$app" "$install_dir"
+ynh_script_progression --message="Refreshing PHP-FPM pool..."
+ynh_config_add_phpfpm
 
-#=================================================
-# REFRESH SYSTEMD + NGINX (in case templates changed)
-#=================================================
-ynh_script_progression --message="Refreshing systemd and nginx..."
-ynh_config_add_systemd
+ynh_script_progression --message="Refreshing nginx..."
 ynh_config_add_nginx
 
-yunohost service add "$app" \
-    --description="Bitcoin Address Watch — mempool.space monitor + Telegram notifier"
+ynh_script_progression --message="Refreshing cron..."
+ynh_config_add --template="cron" --destination="/etc/cron.d/$app"
+chown root:root "/etc/cron.d/$app"
+chmod 644 "/etc/cron.d/$app"
 
-ynh_script_progression --message="Starting btcwatch..."
-ynh_systemctl --service="$app" --action="start" || true
+ynh_script_progression --message="Refreshing logrotate..."
+ynh_config_add_logrotate "/var/log/$app"
 
 ynh_script_progression --message="Upgrade completed"
