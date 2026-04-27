@@ -10,11 +10,11 @@ A small PHP web app that monitors Bitcoin addresses via
 [mempool.space](https://mempool.space) and sends a Telegram message whenever a
 balance changes (confirmed or unconfirmed).
 
-**Shipped version:** 0.2.0~ynh1
+**Shipped version:** 0.2.1~ynh1
 
 ## Architecture
 
-- **Web UI** — PHP 8.2 served by a per-app PHP-FPM pool behind nginx, gated by YunoHost SSO.
+- **Web UI** — PHP 8.3 served by a per-app PHP-FPM pool behind nginx, gated by YunoHost SSO.
 - **Poller** — `poll.php` runs from `/etc/cron.d/btcwatch` every 5 minutes.
 - **Storage** — two JSON files in the data dir: `addresses.json` (watched list + last-known balances) and `settings.json` (Telegram credentials, editable from the web UI).
 - **No daemon, no compiler, no native extensions.**

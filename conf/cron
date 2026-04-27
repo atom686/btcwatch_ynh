@@ -4,4 +4,4 @@
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-*/5 * * * * __APP__ /usr/bin/php8.2 __INSTALL_DIR__/poll.php >> /var/log/__APP__/poll.log 2>&1
+*/5 * * * * __APP__ /usr/bin/php__PHPVERSION__ __INSTALL_DIR__/poll.php >> /var/log/__APP__/poll.log 2>&1
