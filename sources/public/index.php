@@ -56,6 +56,13 @@ function mask_token(?string $token): string {
     if ($len <= 4) return str_repeat('•', $len);
     return str_repeat('•', max(8, $len - 4)) . substr($token, -4);
 }
+/** Render an interval (in seconds) as e.g. "every 5 minutes". */
+function format_interval(int $secs): string {
+    if ($secs < 3600)  { $m = intdiv($secs, 60);   return "every $m minute"  . ($m === 1 ? '' : 's'); }
+    if ($secs < 86400) { $h = intdiv($secs, 3600); return "every $h hour"    . ($h === 1 ? '' : 's'); }
+    $d = intdiv($secs, 86400);
+    return "every $d day" . ($d === 1 ? '' : 's');
+}
 
 // --- Action dispatch -------------------------------------------------------
 
@@ -80,6 +87,15 @@ if ($method === 'POST') {
         }
         $settings->update($update);
         flash('success', 'Telegram settings saved.');
+        redirect_self();
+    }
+
+    if ($action === 'save_polling') {
+        $secs = (int)($_POST['poll_interval_seconds'] ?? 300);
+        // 5 min is the floor — matches cron tick rate, lower is meaningless.
+        $secs = max(300, min(86400, $secs));
+        $settings->update(['poll_interval_seconds' => $secs]);
+        flash('success', 'Polling cadence saved (' . format_interval($secs) . ').');
         redirect_self();
     }
 
@@ -152,10 +168,12 @@ if ($method === 'POST') {
 
 // --- Render ----------------------------------------------------------------
 
-$addresses     = $storage->all();
-$flash         = take_flash();
-$settingsAll   = $settings->all();
-$telegramOk    = $telegram->isConfigured();
-$pollInterval  = $ctx['config']['poll_interval_human'] ?? 'every 5 minutes';
+$addresses        = $storage->all();
+$flash            = take_flash();
+$settingsAll      = $settings->all();
+$telegramOk       = $telegram->isConfigured();
+$pollIntervalSec  = max(300, (int)$settingsAll['poll_interval_seconds']);
+$pollIntervalText = format_interval($pollIntervalSec);
+$lastPollAt       = $settingsAll['last_poll_at'] ?? null;
 
 require __DIR__ . '/../views/index.php';

@@ -2,7 +2,9 @@
 /** @var array $addresses */
 /** @var ?array $flash */
 /** @var bool $telegramOk */
-/** @var string $pollInterval */
+/** @var int $pollIntervalSec */
+/** @var string $pollIntervalText */
+/** @var ?string $lastPollAt */
 /** @var array $settingsAll */
 ?>
 <!doctype html>
@@ -35,9 +37,10 @@
     form.tg .row-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     form.tg .checkbox{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
     @media(max-width:640px){form.add,form.tg{grid-template-columns:1fr}}
-    input[type=text],input[type=password]{background:#0d1117;color:var(--text);border:1px solid var(--border);
+    input[type=text],input[type=password],select{background:#0d1117;color:var(--text);border:1px solid var(--border);
         border-radius:6px;padding:8px 10px;font:inherit;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;width:100%}
-    input[type=text]:focus,input[type=password]:focus{outline:2px solid var(--accent);outline-offset:-1px}
+    input[type=text]:focus,input[type=password]:focus,select:focus{outline:2px solid var(--accent);outline-offset:-1px}
+    select{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 16px) 14px,calc(100% - 11px) 14px;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:32px}
     button{cursor:pointer;background:var(--accent);color:var(--accent-text);border:0;border-radius:6px;
         padding:8px 14px;font:inherit;font-weight:600}
     button.secondary{background:transparent;color:var(--text);border:1px solid var(--border);font-weight:500}
@@ -68,7 +71,7 @@
 <body>
   <div class="wrap">
     <h1>Bitcoin Address Watch <span class="dot">●</span></h1>
-    <p class="sub">Polling mempool.space <?= h($pollInterval) ?>. Telegram message fires on every balance change.</p>
+    <p class="sub">Polling mempool.space <?= h($pollIntervalText) ?>. Telegram message fires on every balance change.</p>
 
     <?php if ($flash): ?>
       <div class="flash <?= h($flash['kind']) ?>"><?= h($flash['message']) ?></div>
@@ -182,6 +185,46 @@
         Leave the bot token field blank when saving to keep the previously-stored value.
         Tick "Clear stored bot token" to wipe it.
       </p>
+    </div>
+
+    <div class="panel">
+      <h2>Polling cadence</h2>
+      <p class="meta" style="margin:0 0 12px">
+        Cron is fixed at every 5 minutes — the floor. Pick a longer
+        interval here to throttle balance checks (e.g. for many addresses,
+        or if mempool.space starts to rate-limit you).
+      </p>
+
+      <form class="tg" method="post" action="?action=save_polling">
+        <div class="full">
+          <label for="poll_interval">Check at most</label>
+          <?php
+            $presets = [
+              300   => 'every 5 minutes (default)',
+              900   => 'every 15 minutes',
+              1800  => 'every 30 minutes',
+              3600  => 'every 1 hour',
+              21600 => 'every 6 hours',
+              43200 => 'every 12 hours',
+              86400 => 'every 24 hours',
+            ];
+            $custom = !isset($presets[$pollIntervalSec]);
+          ?>
+          <select id="poll_interval" name="poll_interval_seconds">
+            <?php foreach ($presets as $secs => $label): ?>
+              <option value="<?= $secs ?>" <?= $pollIntervalSec === $secs ? 'selected' : '' ?>><?= h($label) ?></option>
+            <?php endforeach; ?>
+            <?php if ($custom): ?>
+              <option value="<?= h((string)$pollIntervalSec) ?>" selected><?= h($pollIntervalText) ?> (current)</option>
+            <?php endif; ?>
+          </select>
+        </div>
+        <div class="full row-actions">
+          <button type="submit">Save</button>
+          <span style="flex:1"></span>
+          <span class="meta">last poll: <?= h(format_time($lastPollAt)) ?></span>
+        </div>
+      </form>
     </div>
 
     <p class="meta">

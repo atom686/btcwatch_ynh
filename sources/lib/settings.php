@@ -60,9 +60,14 @@ class Settings
     public static function defaults(): array
     {
         return [
-            'telegram_bot_token' => '',
-            'telegram_chat_id'   => '',
-            'updated_at'         => null,
+            'telegram_bot_token'    => '',
+            'telegram_chat_id'      => '',
+            // Minimum time (in seconds) between mempool.space polls.
+            // Cron triggers every 5 minutes; this is a floor — the script
+            // exits silently when called sooner than this interval.
+            'poll_interval_seconds' => 300,
+            'last_poll_at'          => null,   // ISO-8601, set by poll.php
+            'updated_at'            => null,
         ];
     }
 }
