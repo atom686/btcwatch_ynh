@@ -1,0 +1,18 @@
+# Runtime / install artefacts that should never be in the package repo
+.env
+sources/.env
+sources/data/addresses.json
+sources/vendor/
+sources/.bundle/
+sources/Gemfile.lock
+sources/tmp/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor junk
+*.swp
+*~
+.idea/
+.vscode/

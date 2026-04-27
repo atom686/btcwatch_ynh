@@ -1,0 +1,22 @@
+#!/bin/bash
+# btcwatch remove script.
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+ynh_script_progression --message="Stopping btcwatch..."
+if ynh_hide_warnings yunohost service status "$app" >/dev/null 2>&1; then
+    yunohost service remove "$app"
+fi
+ynh_systemctl --service="$app" --action="stop" || true
+
+ynh_script_progression --message="Removing systemd unit..."
+ynh_config_remove_systemd
+
+ynh_script_progression --message="Removing nginx site..."
+ynh_config_remove_nginx
+
+# install_dir / data_dir / system_user are torn down automatically by the
+# resource manager declared in manifest.toml.
+
+ynh_script_progression --message="Removal completed"

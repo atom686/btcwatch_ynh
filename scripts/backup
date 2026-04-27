@@ -1,0 +1,21 @@
+#!/bin/bash
+# btcwatch backup script.
+# Captures the install dir, the data dir (addresses.json), the systemd unit
+# and the nginx config so a restore yields a working install.
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+ynh_print_info --message="Backing up btcwatch..."
+
+#--- Source code + bundled gems + .env ---
+ynh_backup --src_path="$install_dir"
+
+#--- Watched addresses + last-known balances ---
+ynh_backup --src_path="$data_dir" --is_big
+
+#--- Systemd unit ---
+ynh_backup --src_path="/etc/systemd/system/$app.service"
+
+#--- Nginx site ---
+ynh_backup --src_path="/etc/nginx/conf.d/$domain.d/$app.conf"

@@ -1,0 +1,53 @@
+#!/bin/bash
+# btcwatch upgrade script.
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+ynh_script_progression --message="Stopping btcwatch..."
+ynh_systemctl --service="$app" --action="stop" || true
+
+#=================================================
+# REPLACE SOURCE
+#=================================================
+ynh_script_progression --message="Refreshing source code..."
+
+btcwatch_sync_source "$install_dir"
+chown -R "$app:$app" "$install_dir"
+
+# Make sure the data file still exists (won't be touched by source rsync).
+if [ ! -f "$data_dir/addresses.json" ]; then
+    echo "[]" > "$data_dir/addresses.json"
+    chown "$app:$app" "$data_dir/addresses.json"
+    chmod 640 "$data_dir/addresses.json"
+fi
+
+#=================================================
+# REWRITE .env (keeps secrets in sync with new template variables)
+#=================================================
+ynh_script_progression --message="Updating environment file..."
+ynh_config_add --template="btcwatch.env" --destination="$install_dir/.env"
+chown "$app:$app" "$install_dir/.env"
+chmod 600 "$install_dir/.env"
+
+#=================================================
+# RE-RUN BUNDLE INSTALL
+#=================================================
+ynh_script_progression --message="Updating Ruby dependencies..."
+btcwatch_bundle_install "$app" "$install_dir"
+
+#=================================================
+# REFRESH SYSTEMD + NGINX (in case templates changed)
+#=================================================
+ynh_script_progression --message="Refreshing systemd and nginx..."
+ynh_config_add_systemd
+ynh_config_add_nginx
+
+yunohost service add "$app" \
+    --description="Bitcoin Address Watch — mempool.space monitor + Telegram notifier" \
+    --log_type="systemd"
+
+ynh_script_progression --message="Starting btcwatch..."
+ynh_systemctl --service="$app" --action="start" || true
+
+ynh_script_progression --message="Upgrade completed"

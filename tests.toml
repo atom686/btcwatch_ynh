@@ -1,0 +1,11 @@
+test_format = 1.0
+
+[default]
+
+# What to assert during the YunoHost CI run.
+exclude = ["install_subdir"]   # nginx config requires sub-path; root install untested
+
+# Sample answers for the install questions defined in manifest.toml.
+args.telegram_bot_token = ""
+args.telegram_chat_id = ""
+args.poll_interval_seconds = "60"

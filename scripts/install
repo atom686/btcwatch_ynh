@@ -1,0 +1,67 @@
+#!/bin/bash
+# btcwatch install script — YunoHost packaging v2.
+
+source _common.sh
+source /usr/share/yunohost/helpers
+
+# Manifest install questions and resource provisioning expose:
+#   $domain $path $app
+#   $install_dir $data_dir
+#   $port
+#   $telegram_bot_token $telegram_chat_id $poll_interval_seconds
+
+#=================================================
+# DEPLOY APPLICATION SOURCE
+#=================================================
+ynh_script_progression --message="Deploying btcwatch source..."
+
+btcwatch_sync_source "$install_dir"
+
+mkdir -p "$data_dir"
+# Pre-create empty addresses.json so first request doesn't race the monitor.
+if [ ! -f "$data_dir/addresses.json" ]; then
+    echo "[]" > "$data_dir/addresses.json"
+fi
+
+chown -R "$app:$app" "$install_dir" "$data_dir"
+chmod 750 "$data_dir"
+chmod 640 "$data_dir/addresses.json"
+
+#=================================================
+# WRITE .env
+#=================================================
+ynh_script_progression --message="Writing environment file..."
+
+ynh_config_add --template="btcwatch.env" --destination="$install_dir/.env"
+chown "$app:$app" "$install_dir/.env"
+chmod 600 "$install_dir/.env"
+
+#=================================================
+# INSTALL RUBY DEPENDENCIES
+#=================================================
+ynh_script_progression --message="Running bundle install (this may take a minute)..."
+
+btcwatch_bundle_install "$app" "$install_dir"
+
+#=================================================
+# SYSTEMD + NGINX
+#=================================================
+ynh_script_progression --message="Adding systemd unit..."
+ynh_config_add_systemd
+
+ynh_script_progression --message="Adding nginx site..."
+ynh_config_add_nginx
+
+yunohost service add "$app" \
+    --description="Bitcoin Address Watch — mempool.space monitor + Telegram notifier" \
+    --log_type="systemd"
+
+#=================================================
+# START SERVICE
+#=================================================
+ynh_script_progression --message="Starting btcwatch..."
+ynh_systemctl --service="$app" --action="start" --log_path="systemd" \
+              --wait_until="WEBrick::HTTPServer#start\|Puma starting\|Listening on" \
+              --line_match="Listening on" || true
+
+ynh_script_progression --message="Installation completed"

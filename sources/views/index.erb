@@ -1,0 +1,68 @@
+<div class="panel">
+  <h2>Add address</h2>
+  <form class="add" action="/addresses" method="post">
+    <input type="text" name="address" placeholder="bc1q… / 3… / 1…" autocomplete="off" required>
+    <input type="text" name="label"   placeholder="Label (optional)" autocomplete="off">
+    <button type="submit">Add</button>
+  </form>
+</div>
+
+<div class="panel">
+  <div class="toolbar" style="margin-bottom: 12px;">
+    <h2 style="margin: 0;">Watched addresses</h2>
+    <div>
+      <% if @telegram_ok %>
+        <span class="pill ok">Telegram configured</span>
+      <% else %>
+        <span class="pill warn">Telegram not configured</span>
+      <% end %>
+      <form action="/check_all" method="post" style="display:inline; margin-left: 8px;">
+        <button type="submit" class="secondary">Check all now</button>
+      </form>
+    </div>
+  </div>
+
+  <% if @addresses.empty? %>
+    <div class="empty">No addresses yet. Add one above to start monitoring.</div>
+  <% else %>
+    <table>
+      <thead>
+        <tr>
+          <th>Address</th>
+          <th>Label</th>
+          <th>Balance</th>
+          <th>Last checked</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @addresses.each do |a| %>
+          <tr>
+            <td class="address">
+              <a href="https://mempool.space/address/<%= h(a['address']) %>" target="_blank" rel="noopener">
+                <%= h(a["address"]) %>
+              </a>
+            </td>
+            <td><%= h(a["label"] || "—") %></td>
+            <td class="balance"><%= format_sats(a["last_balance_sats"]) %></td>
+            <td class="meta"><%= format_time(a["last_checked_at"]) %></td>
+            <td class="actions">
+              <form action="/addresses/<%= h(a['id']) %>/check" method="post">
+                <button type="submit" class="secondary">Check</button>
+              </form>
+              <form action="/addresses/<%= h(a['id']) %>/delete" method="post"
+                    onsubmit="return confirm('Stop monitoring this address?');">
+                <button type="submit" class="danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>
+
+<p class="meta">
+  Storage: <code>data/addresses.json</code>.
+  Source: <a href="https://mempool.space" target="_blank" rel="noopener">mempool.space</a>.
+</p>

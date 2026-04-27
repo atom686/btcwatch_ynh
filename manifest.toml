@@ -1,0 +1,104 @@
+#:schema https://raw.githubusercontent.com/YunoHost/apps/main/schemas/manifest.v2.schema.json
+
+packaging_format = 2
+
+id = "btcwatch"
+name = "Bitcoin Address Watch"
+description.en = "Monitor Bitcoin addresses via mempool.space and get a Telegram notification on every balance change."
+description.fr = "Surveille des adresses Bitcoin via mempool.space et envoie une notification Telegram à chaque changement de solde."
+
+version = "0.1.0~ynh1"
+
+maintainers = ["Igor <is@svrgn.me>"]
+
+[upstream]
+license = "MIT"
+website = "https://github.com/atom686/btcwatch_ynh"
+code = "https://github.com/atom686/btcwatch_ynh"
+admindoc = "https://github.com/atom686/btcwatch_ynh#readme"
+
+[integration]
+yunohost = ">= 11.2"
+helpers_version = "2.1"
+architectures = "all"
+multi_instance = true
+
+# The app has its own auth model (none); SSO is what gates access.
+ldap = "not_relevant"
+sso = true
+
+disk = "50M"
+ram.build = "256M"
+ram.runtime = "80M"
+
+# ---------------------------------------------------------------------------
+# Install-time questions
+# ---------------------------------------------------------------------------
+[install]
+    [install.domain]
+    type = "domain"
+
+    [install.path]
+    type = "path"
+    default = "/btcwatch"
+
+    [install.init_main_permission]
+    type = "group"
+    default = "all_users"
+    help.en = "Who can reach the web UI? Defaults to all YunoHost users (SSO-protected)."
+
+    [install.telegram_bot_token]
+    type = "string"
+    ask.en = "Telegram bot token"
+    help.en = "Talk to @BotFather on Telegram, run /newbot, paste the HTTP API token here. Leave blank to configure later."
+    example = "123456:AAH..."
+    optional = true
+
+    [install.telegram_chat_id]
+    type = "string"
+    ask.en = "Telegram chat id"
+    help.en = "Send any message to your bot, then visit https://api.telegram.org/bot<TOKEN>/getUpdates and copy the chat.id value."
+    example = "987654321"
+    optional = true
+
+    [install.poll_interval_seconds]
+    type = "string"
+    ask.en = "Poll interval (seconds)"
+    help.en = "How often to check each address against mempool.space. Default 3600 (1h). Be polite to the public API — don't go below 60 with many addresses."
+    default = "3600"
+
+# ---------------------------------------------------------------------------
+# Resources YunoHost provisions for us
+# ---------------------------------------------------------------------------
+[resources]
+
+    # Source code is shipped inline under sources/ (see scripts/install).
+    # If you ever want to fetch from a tagged tarball instead, replace
+    # the inline-source approach with:
+    #
+    # [resources.sources.main]
+    # url = "https://github.com/atom686/btcwatch_ynh/archive/refs/tags/v0.1.0.tar.gz"
+    # sha256 = "<sha256 of the tarball>"
+    # autoupdate.strategy = "latest_github_tag"
+
+    [resources.system_user]
+    # Creates the unprivileged `btcwatch` system user, no shell, no home write.
+
+    [resources.install_dir]
+    # Provisions /var/www/btcwatch, owned by the system user.
+
+    [resources.data_dir]
+    # Provisions /home/yunohost.app/btcwatch — holds addresses.json so
+    # state survives upgrades / source replacement.
+
+    [resources.permissions]
+    main.url = "/"
+    # SSO is forced on by integration.sso = true + init_main_permission.
+
+    [resources.ports]
+    main.default = 4567
+    # YunoHost will pick a free port and expose it as $port to the scripts;
+    # only nginx talks to it.
+
+    [resources.apt]
+    packages = "ruby, ruby-dev, ruby-bundler, build-essential"

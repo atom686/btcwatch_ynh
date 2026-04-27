@@ -1,0 +1,3 @@
+# Empty placeholder — service logs to journald, so no file rotation needed.
+# Kept so ynh_config_add_logrotate can be called uniformly if you switch to
+# StandardOutput=append:/var/log/__APP__/__APP__.log later.

@@ -1,0 +1,42 @@
+[Unit]
+Description=Bitcoin Address Watch (__APP__)
+Documentation=https://github.com/atom686/btcwatch_ynh
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__APP__
+Group=__APP__
+WorkingDirectory=__INSTALL_DIR__/
+EnvironmentFile=__INSTALL_DIR__/.env
+ExecStart=/usr/bin/bundle exec rackup --host 127.0.0.1 --port __PORT__
+Restart=on-failure
+RestartSec=10s
+
+# Logging — go to journal; YunoHost reads it via `journalctl -u __APP__`.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=__APP__
+
+# --- sandboxing ---
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=__INSTALL_DIR__ __DATA_DIR__
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+# Allow outbound to mempool.space + api.telegram.org over IPv4/IPv6.
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target
