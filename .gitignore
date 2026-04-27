@@ -1,6 +1,7 @@
 # Runtime / install artefacts that should never be in the package repo
 .env
 sources/.env
+sources/config.php
 sources/data/addresses.json
 sources/vendor/
 sources/.bundle/
