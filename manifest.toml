@@ -7,7 +7,7 @@ name = "Bitcoin Address Watch"
 description.en = "Monitor Bitcoin addresses via mempool.space and get a Telegram notification on every balance change."
 description.fr = "Surveille des adresses Bitcoin via mempool.space et envoie une notification Telegram à chaque changement de solde."
 
-version = "0.2.1~ynh1"
+version = "0.2.2~ynh1"
 
 maintainers = ["Igor <is@svrgn.me>"]
 
