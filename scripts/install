@@ -53,15 +53,12 @@ ynh_script_progression --message="Adding nginx site..."
 ynh_config_add_nginx
 
 yunohost service add "$app" \
-    --description="Bitcoin Address Watch — mempool.space monitor + Telegram notifier" \
-    --log_type="systemd"
+    --description="Bitcoin Address Watch — mempool.space monitor + Telegram notifier"
 
 #=================================================
 # START SERVICE
 #=================================================
 ynh_script_progression --message="Starting btcwatch..."
-ynh_systemctl --service="$app" --action="start" --log_path="systemd" \
-              --wait_until="WEBrick::HTTPServer#start\|Puma starting\|Listening on" \
-              --line_match="Listening on" || true
+ynh_systemctl --service="$app" --action="start"
 
 ynh_script_progression --message="Installation completed"
